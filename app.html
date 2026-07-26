@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EffiSol Proposal Generator</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Native PDF Generation Libraries -->
+    <script src="template_pdf.js"></script>
+    <script src="pdf-lib.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0A0A0C;
+            --primary: #FF9A2E;
+            --primary-hover: #ffad54;
+            --glass-bg: rgba(20, 20, 22, 0.6);
+            --glass-border: rgba(255, 154, 46, 0.15);
+            --text-main: #FFFFFF;
+            --text-muted: #A0A0A5;
+            --success: #00C853;
+            --error: #FF3B30;
+            --font-body: 'Inter', sans-serif;
+            --font-heading: 'Space Grotesk', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 154, 46, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(255, 154, 46, 0.03) 0%, transparent 50%);
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
+
+        /* Views */
+        #landing-view, #app-view {
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .hidden {
+            display: none !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Landing Page */
+        #landing-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .brand-title {
+            font-family: var(--font-heading);
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 3rem;
+            text-align: center;
+            letter-spacing: -1px;
+            text-shadow: 0 0 20px rgba(255, 154, 46, 0.3);
+        }
+
+        .cards-container {
+            display: flex;
+            gap: 2rem;
+            max-width: 1000px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .mode-card {
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-card:not(.disabled):hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(255, 154, 46, 0.1);
+        }
+
+        .mode-card.disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .mode-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .mode-card h2 {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .badge-soon {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* App View */
+        #app-view {
+            display: flex;
+            min-height: 100vh;
+            padding: 2rem;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar {
+            width: 350px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: sticky;
+            top: 2rem;
+            height: max-content;
+        }
+
+        .section {
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input, select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(255, 154, 46, 0.2);
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.5;
+            cursor: pointer;
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Collapsible */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .collapsible-content {
+            display: none;
+            margin-top: 1.5rem;
+        }
+        
+        .collapsible-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .collapse-icon {
+            transition: transform 0.3s ease;
+        }
+        .collapse-icon.open {
+            transform: rotate(180deg);
+        }
+
+        /* Live Preview */
+        .preview-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .preview-item:last-child {
+            border-bottom: none;
+        }
+
+        .preview-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .preview-value {
+            font-weight: 600;
+            font-family: var(--font-heading);
+            text-align: right;
+        }
+        
+        .preview-value.highlight {
+            color: var(--success);
+        }
+
+        /* Buttons */
+        .btn-generate {
+            background: linear-gradient(135deg, var(--primary), #FF7000);
+            color: #000;
+            border: none;
+            padding: 1.25rem;
+            border-radius: 12px;
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(255, 154, 46, 0.3);
+            width: 100%;
+            margin-top: auto;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 154, 46, 0.4);
+        }
+        
+        .btn-back {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: var(--font-body);
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-back:hover {
+            color: var(--text-main);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .save-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .save-indicator.visible {
+            opacity: 1;
+        }
+
+        .save-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 900px) {
+            #app-view {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Landing View -->
+    <div id="landing-view">
+        <h1 class="brand-title">EffiSol Energy Solutions</h1>
+        <div class="cards-container">
+            <div class="glass mode-card" id="btn-normal-mode">
+                <span class="mode-icon">☀️</span>
+                <h2>Normal Solar Proposal</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Generate standard on-grid solar quotes.</p>
+            </div>
+            
+            <div class="glass mode-card disabled">
+                <span class="badge-soon">Coming Soon</span>
+                <span class="mode-icon">🔋</span>
+                <h2>Hybrid Solar Proposal</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Quotes with battery storage systems.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App View -->
+    <div id="app-view" class="hidden">
+        <div class="main-content">
+            <div class="top-bar">
+                <button class="btn-back" id="btn-back">← Back</button>
+                <div class="save-indicator" id="save-indicator">
+                    <div class="save-dot"></div>
+                    <span>Saved</span>
+                </div>
+            </div>
+
+            <!-- Customer Details -->
+            <div class="glass section">
+                <h3 class="section-title">Customer Details</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="customer_name">Customer Name *</label>
+                        <input type="text" id="customer_name" required placeholder="Enter name">
+                    </div>
+                    <div class="form-group">
+                        <label for="customer_type">Customer Type</label>
+                        <select id="customer_type">
+                            <option value="Residential">Residential</option>
+                            <option value="Commercial">Commercial</option>
+                            <option value="Function Hall">Function Hall</option>
+                            <option value="Industrial">Industrial</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="proposal_date">Proposal Date</label>
+                        <input type="date" id="proposal_date">
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Specifications -->
+            <div class="glass section">
+                <h3 class="section-title">System Specifications</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="capacity_kw">Capacity (kW) *</label>
+                        <input type="number" id="capacity_kw" step="0.1" required placeholder="e.g. 5.5">
+                    </div>
+                    <div class="form-group">
+                        <label for="min_cumulative_capacity_kwp">Cumulative Capacity (kWp)</label>
+                        <input type="number" id="min_cumulative_capacity_kwp" step="0.1" placeholder="Auto-fills">
+                    </div>
+                    <div class="form-group">
+                        <label for="panel_technology">Panel Technology</label>
+                        <select id="panel_technology">
+                            <option value="Topcon">Topcon</option>
+                            <option value="Monoperc">Monoperc</option>
+                            <option value="HJT">HJT</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="panel_category">Panel Category</label>
+                        <select id="panel_category">
+                            <option value="DCR">DCR</option>
+                            <option value="NON DCR">NON DCR</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="panel_wattage">Panel Wattage (Wp)</label>
+                        <input type="number" id="panel_wattage" placeholder="e.g. 615">
+                    </div>
+                    <div class="form-group">
+                        <label for="panel_brand">Panel Brand</label>
+                        <input type="text" id="panel_brand" placeholder="e.g. Adani / Luminous">
+                    </div>
+                    <div class="form-group">
+                        <label for="inverter_capacity_kva">Inverter Capacity (kVA)</label>
+                        <input type="number" id="inverter_capacity_kva" step="0.1" placeholder="e.g. 5">
+                    </div>
+                    <div class="form-group">
+                        <label for="inverter_brand">Inverter Brand</label>
+                        <input type="text" id="inverter_brand" placeholder="e.g. Waaree / Polycab">
+                    </div>
+                    <div class="form-group">
+                        <label for="inverter_warranty_years">Inverter Warranty (Years)</label>
+                        <input type="number" id="inverter_warranty_years" placeholder="e.g. 7">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost & Subsidy -->
+            <div class="glass section">
+                <h3 class="section-title">Cost & Subsidy</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="project_cost_inr">Project Cost (INR) *</label>
+                        <input type="number" id="project_cost_inr" required placeholder="e.g. 325000">
+                    </div>
+                    <div class="form-group">
+                        <label for="subsidy_inr">Subsidy (INR) *</label>
+                        <input type="number" id="subsidy_inr" required placeholder="e.g. 78000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="glass section">
+                <div class="section-title collapsible-header" id="adv-settings-toggle">
+                    Advanced Settings
+                    <span class="collapse-icon">▼</span>
+                </div>
+                <div class="collapsible-content" id="adv-settings-content">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="specific_yield">Specific Yield</label>
+                            <input type="number" id="specific_yield" step="0.1" value="4.2">
+                        </div>
+                        <div class="form-group">
+                            <label for="tariff_rs_unit">Tariff (Rs/Unit)</label>
+                            <input type="number" id="tariff_rs_unit" step="0.1" value="8">
+                        </div>
+                        <div class="form-group">
+                            <label for="offer_valid_date">Offer Valid Until</label>
+                            <input type="date" id="offer_valid_date">
+                        </div>
+                        <div class="form-group">
+                            <label>Civil Work</label>
+                            <div class="toggle-container">
+                                <span>Include Civil Work</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="civil_work_toggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar / Live Preview -->
+        <div class="sidebar">
+            <div class="glass section">
+                <h3 class="section-title">Live Preview</h3>
+                
+                <div class="preview-item">
+                    <span class="preview-label">Net Cost</span>
+                    <span class="preview-value highlight" id="prev_net_cost">Rs. 0</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Basic Cost</span>
+                    <span class="preview-value" id="prev_basic_cost">Rs. 0</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">GST</span>
+                    <span class="preview-value" id="prev_gst">Rs. 0</span>
+                </div>
+                
+                <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 1rem 0;"></div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">Annual Energy</span>
+                    <span class="preview-value" id="prev_annual_energy">0 units</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Monthly Energy</span>
+                    <span class="preview-value" id="prev_monthly_energy">0 units</span>
+                </div>
+                
+                <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 1rem 0;"></div>
+                
+                <div class="preview-item">
+                    <span class="preview-label">Monthly Savings</span>
+                    <span class="preview-value highlight" id="prev_monthly_savings">Rs. 0</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">Annual Savings</span>
+                    <span class="preview-value highlight" id="prev_annual_savings">Rs. 0</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">25-Year Savings</span>
+                    <span class="preview-value highlight" id="prev_25yr_savings" style="color: var(--primary);">Rs. 0</span>
+                </div>
+            </div>
+
+            <button class="btn-generate" id="btn-generate">Generate Proposal</button>
+        </div>
+    </div>
+
+    <script>
+        // Data and State
+        const TARIFFS = {
+            'Residential': 8,
+            'Commercial': 10,
+            'Function Hall': 12,
+            'Industrial': 7
+        };
+
+        const state = {
+            values: {},
+            calcs: {}
+        };
+
+        let saveTimeout = null;
+
+        // Utility Functions
+        function formatINR(num) {
+            if (isNaN(num)) return "0";
+            return new Intl.NumberFormat('en-IN').format(Math.round(num));
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+
+        function addDays(dateStr, days) {
+            const d = new Date(dateStr);
+            d.setDate(d.getDate() + days);
+            return d.toISOString().split('T')[0];
+        }
+
+        // DOM Elements
+        const inputs = document.querySelectorAll('input, select');
+        const prevNetCost = document.getElementById('prev_net_cost');
+        const prevBasicCost = document.getElementById('prev_basic_cost');
+        const prevGst = document.getElementById('prev_gst');
+        const prevAnnualEnergy = document.getElementById('prev_annual_energy');
+        const prevMonthlyEnergy = document.getElementById('prev_monthly_energy');
+        const prevMonthlySavings = document.getElementById('prev_monthly_savings');
+        const prevAnnualSavings = document.getElementById('prev_annual_savings');
+        const prev25YrSavings = document.getElementById('prev_25yr_savings');
+
+        // Initialize Defaults
+        function initDefaults() {
+            const today = new Date().toISOString().split('T')[0];
+            const setIfEmpty = (id, val) => {
+                const el = document.getElementById(id);
+                if (el && !el.value) el.value = val;
+            };
+            setIfEmpty('customer_name', 'Mr. Rama Krishna');
+            setIfEmpty('customer_type', 'Residential');
+            setIfEmpty('proposal_date', today);
+            setIfEmpty('capacity_kw', '5.5');
+            setIfEmpty('min_cumulative_capacity_kwp', '5.5');
+            setIfEmpty('panel_technology', 'Topcon');
+            setIfEmpty('panel_category', 'DCR');
+            setIfEmpty('panel_wattage', '615');
+            setIfEmpty('panel_brand', 'Adani / Luminous');
+            setIfEmpty('inverter_capacity_kva', '5');
+            setIfEmpty('inverter_brand', 'Waaree / Polycab');
+            setIfEmpty('inverter_warranty_years', '7');
+            setIfEmpty('project_cost_inr', '325000');
+            setIfEmpty('subsidy_inr', '78000');
+            setIfEmpty('specific_yield', '4.2');
+            setIfEmpty('tariff_rs_unit', '8');
+            setIfEmpty('offer_valid_date', addDays(today, 7));
+        }
+
+        // Calculations
+        function calculateAll() {
+            // Collect values
+            inputs.forEach(input => {
+                if (input.type === 'checkbox') {
+                    state.values[input.id] = input.checked;
+                } else if (input.type === 'number') {
+                    state.values[input.id] = parseFloat(input.value) || 0;
+                } else {
+                    state.values[input.id] = input.value;
+                }
+            });
+
+            const v = state.values;
+            const c = state.calcs;
+
+            // Costs
+            c.netCost = v.project_cost_inr - v.subsidy_inr;
+            c.basicCost = Math.round(v.project_cost_inr / 1.089);
+            c.gst = v.project_cost_inr - c.basicCost;
+
+            // Energy
+            c.annualEnergy = Math.round(v.specific_yield * v.capacity_kw * 365);
+            c.monthlyEnergy = Math.round(c.annualEnergy / 12);
+
+            // Savings
+            c.monthlySavings = Math.round(c.monthlyEnergy * v.tariff_rs_unit);
+            c.annualSavings = Math.round(c.annualEnergy * v.tariff_rs_unit);
+
+            // 25-Year Savings
+            let totalSavings25 = 0;
+            let currentProduction = c.annualEnergy * 0.98; // Year 1 factor
+            let currentTariff = v.tariff_rs_unit;
+
+            totalSavings25 += currentProduction * currentTariff;
+
+            for (let i = 2; i <= 25; i++) {
+                currentProduction = currentProduction * (1 - 0.0055);
+                currentTariff = currentTariff * 1.03;
+                totalSavings25 += currentProduction * currentTariff;
+            }
+            c.savings25Yr = Math.round(totalSavings25);
+
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const c = state.calcs;
+            prevNetCost.textContent = `Rs. ${formatINR(c.netCost)}`;
+            prevBasicCost.textContent = `Rs. ${formatINR(c.basicCost)}`;
+            prevGst.textContent = `Rs. ${formatINR(c.gst)}`;
+            prevAnnualEnergy.textContent = `${formatINR(c.annualEnergy)} units`;
+            prevMonthlyEnergy.textContent = `${formatINR(c.monthlyEnergy)} units`;
+            prevMonthlySavings.textContent = `Rs. ${formatINR(c.monthlySavings)}`;
+            prevAnnualSavings.textContent = `Rs. ${formatINR(c.annualSavings)}`;
+            prev25YrSavings.textContent = `Rs. ${formatINR(c.savings25Yr)}`;
+        }
+
+        // Event Listeners for Live Updates
+        inputs.forEach(input => {
+            input.addEventListener('input', (e) => {
+                // Auto-fill logic
+                if (e.target.id === 'capacity_kw') {
+                    document.getElementById('min_cumulative_capacity_kwp').value = e.target.value;
+                }
+                if (e.target.id === 'customer_type') {
+                    document.getElementById('tariff_rs_unit').value = TARIFFS[e.target.value] || 8;
+                }
+                if (e.target.id === 'proposal_date') {
+                    if (e.target.value) {
+                        document.getElementById('offer_valid_date').value = addDays(e.target.value, 7);
+                    }
+                }
+
+                calculateAll();
+                triggerAutoSave();
+            });
+        });
+
+        // Auto Save
+        function triggerAutoSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                localStorage.setItem('effisol_proposal_data', JSON.stringify({
+                    values: state.values,
+                    calcs: state.calcs
+                }));
+                showSaveIndicator();
+            }, 500);
+        }
+
+        function showSaveIndicator() {
+            const ind = document.getElementById('save-indicator');
+            ind.classList.add('visible');
+            setTimeout(() => {
+                ind.classList.remove('visible');
+            }, 2000);
+        }
+
+        function loadSavedData() {
+            const saved = localStorage.getItem('effisol_proposal_data');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    inputs.forEach(input => {
+                        if (data.values.hasOwnProperty(input.id)) {
+                            if (input.type === 'checkbox') {
+                                input.checked = data.values[input.id];
+                            } else {
+                                input.value = data.values[input.id];
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.error("Error parsing saved data", e);
+                }
+            }
+        }
+
+        // UI Interactions
+        document.getElementById('btn-normal-mode').addEventListener('click', () => {
+            document.getElementById('landing-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
+            
+            if (!localStorage.getItem('effisol_proposal_data')) {
+                initDefaults();
+            } else {
+                loadSavedData();
+            }
+            calculateAll();
+        });
+
+        document.getElementById('btn-back').addEventListener('click', () => {
+            document.getElementById('app-view').classList.add('hidden');
+            document.getElementById('landing-view').classList.remove('hidden');
+        });
+
+        document.getElementById('adv-settings-toggle').addEventListener('click', function() {
+            const content = document.getElementById('adv-settings-content');
+            const icon = this.querySelector('.collapse-icon');
+            content.classList.toggle('active');
+            icon.classList.toggle('open');
+        });
+
+        // PDF Generation
+        document.getElementById('btn-generate').addEventListener('click', () => {
+            if (!document.getElementById('customer_name').value || 
+                !document.getElementById('capacity_kw').value || 
+                !document.getElementById('project_cost_inr').value || 
+                !document.getElementById('subsidy_inr').value) {
+                alert("Please fill in all required fields (*).");
+                return;
+            }
+            calculateAll();
+            generateProposalPDF(state.values, state.calcs);
+        });
+
+                async function generateProposalPDF(values, calcs) {
+            try {
+                if (typeof TEMPLATE_PDF_B64 === 'undefined') {
+                    alert("template_pdf.js is missing or not loaded correctly.");
+                    return;
+                }
+
+                if (typeof PDFLib === 'undefined') {
+                    alert("pdf-lib.min.js library failed to load.");
+                    return;
+                }
+
+                const { PDFDocument, rgb, StandardFonts } = PDFLib;
+                const pdfDoc = await PDFDocument.load(TEMPLATE_PDF_B64);
+                const pages = pdfDoc.getPages();
+                const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+                const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+                const blueColor = rgb(11/255, 87/255, 157/255);
+                const whiteColor = rgb(1, 1, 1);
+                const blackColor = rgb(0, 0, 0);
+                const goldColor = rgb(1, 215/255, 0);
+                const navyColor = rgb(0, 51/255, 102/255);
+                const orangeColor = rgb(220/255, 100/255, 0);
+                const savingsBlueColor = rgb(0, 0, 180/255);
+
+                // ================= PAGE 1 =================
+                const p1 = pages[0];
+                const h1 = p1.getHeight();
+                const w1 = p1.getWidth();
+
+                // Solid blue rect across full header width
+                p1.drawRectangle({ x: 35, y: h1 - 180, width: 542, height: 45, color: blueColor });
+                
+                // Title 1
+                const t1 = `${values.capacity_kw} kW ${values.customer_type} ON-Grid Solar PV System`;
+                p1.drawText(t1, {
+                    x: (w1 - helveticaBold.widthOfTextAtSize(t1, 14)) / 2,
+                    y: h1 - 156,
+                    size: 14,
+                    font: helveticaBold,
+                    color: whiteColor
+                });
+
+                // Title 2
+                const t2 = `( With high Efficiency ${values.panel_wattage} Wp ${values.panel_technology} Bifacial Solar Panels or above )`;
+                p1.drawText(t2, {
+                    x: (w1 - helveticaBold.widthOfTextAtSize(t2, 10)) / 2,
+                    y: h1 - 174,
+                    size: 10,
+                    font: helveticaBold,
+                    color: goldColor
+                });
+
+                // Customer Name
+                p1.drawRectangle({ x: 100, y: h1 - 460, width: 412, height: 30, color: whiteColor });
+                const nameStr = values.customer_name || '';
+                p1.drawText(nameStr, {
+                    x: (w1 - helveticaBold.widthOfTextAtSize(nameStr, 18)) / 2,
+                    y: h1 - 454,
+                    size: 18,
+                    font: helveticaBold,
+                    color: blackColor
+                });
+
+                // ================= PAGE 5 =================
+                const p5 = pages[4];
+                const h5 = p5.getHeight();
+                const w5 = p5.getWidth();
+
+                // Summary Header (x0=146, top=133)
+                p5.drawRectangle({ x: 100, y: h5 - 147, width: 412, height: 16, color: whiteColor });
+                const summaryTitle = `${values.capacity_kw} kW OnGrid Solar PV System Summary`;
+                p5.drawText(summaryTitle, {
+                    x: (w5 - helveticaBold.widthOfTextAtSize(summaryTitle, 13)) / 2,
+                    y: h5 - 146,
+                    size: 13,
+                    font: helveticaBold,
+                    color: navyColor
+                });
+
+                // Left Column Subtitle (x0=37.7, top=190.4)
+                p5.drawRectangle({ x: 35, y: h5 - 204, width: 240, height: 16, color: whiteColor });
+                p5.drawText(`${values.capacity_kw} kW On Grid Solar PV System`, {
+                    x: 37.7, y: h5 - 201, size: 11, font: helveticaBold, color: blackColor
+                });
+
+                // Cumulative capacity (5.5 is at x0=187.4, top=259)
+                p5.drawRectangle({ x: 184, y: h5 - 272, width: 80, height: 16, color: whiteColor });
+                p5.drawText(`${values.min_cumulative_capacity_kwp} kWp`, {
+                    x: 187.4, y: h5 - 269, size: 10, font: helveticaBold, color: blackColor
+                });
+
+                // Panel Details - Line 1 & Line 2 (Topcon is at x0=137.2, top=276)
+                p5.drawRectangle({ x: 135, y: h5 - 288, width: 160, height: 15, color: whiteColor });
+                p5.drawText(`${values.panel_technology} Bifacial ${values.panel_category} Solar`, {
+                    x: 137.2, y: h5 - 285, size: 9, font: helvetica, color: blackColor
+                });
+
+                // (Panels is at x0=134.5, top=292.0)
+                p5.drawRectangle({ x: 135, y: h5 - 304, width: 150, height: 15, color: whiteColor });
+                p5.drawText(`Panels ${values.panel_wattage} W or above`, {
+                    x: 138.0, y: h5 - 301, size: 9, font: helvetica, color: blackColor
+                });
+
+                // Panel Brand (Adani is at x0=110.3, top=308)
+                p5.drawRectangle({ x: 105, y: h5 - 321, width: 180, height: 16, color: whiteColor });
+                p5.drawText(`${values.panel_brand}`, {
+                    x: 110.3, y: h5 - 317, size: 9, font: helveticaBold, color: blackColor
+                });
+
+                // Inverter (5 kW is at x0=37.7, top=355.0)
+                p5.drawRectangle({ x: 35, y: h5 - 368, width: 240, height: 16, color: whiteColor });
+                p5.drawText(`${values.inverter_capacity_kva} kW On Grid Inverter`, {
+                    x: 37.7, y: h5 - 365, size: 10, font: helveticaBold, color: blackColor
+                });
+
+                // Inverter Brand (Waaree is at x0=113.2, top=375.9)
+                p5.drawRectangle({ x: 105, y: h5 - 389, width: 180, height: 16, color: whiteColor });
+                p5.drawText(`${values.inverter_brand}`, {
+                    x: 113.3, y: h5 - 385, size: 9, font: helveticaBold, color: blackColor
+                });
+
+                // Right Column - Project Cost (Rs. is at 394.0, 3,25,000 is at 414.3, top=227.7)
+                p5.drawRectangle({ x: 390, y: h5 - 242, width: 160, height: 18, color: whiteColor });
+                p5.drawText(`Rs. ${formatINR(values.project_cost_inr)}`, {
+                    x: 395.0, y: h5 - 238, size: 11, font: helveticaBold, color: blackColor
+                });
+
+                // Subsidy (Rs. is at 476.5, top=345.1)
+                p5.drawRectangle({ x: 470, y: h5 - 359, width: 115, height: 18, color: whiteColor });
+                p5.drawText(`Rs. ${formatINR(values.subsidy_inr)}`, {
+                    x: 476.5, y: h5 - 356, size: 11, font: helveticaBold, color: orangeColor
+                });
+
+                // Net Cost (Rs. is at 455.6, top=375.8)
+                p5.drawRectangle({ x: 450, y: h5 - 392, width: 135, height: 20, color: whiteColor });
+                p5.drawText(`Rs. ${formatINR(calcs.netCost)}`, {
+                    x: 455.6, y: h5 - 388, size: 12, font: helveticaBold, color: blackColor
+                });
+
+                // Benefits Section
+                p5.drawRectangle({ x: 394, y: h5 - 511, width: 120, height: 18, color: whiteColor });
+                p5.drawText(`${formatINR(calcs.annualEnergy)} units`, {
+                    x: 396.2, y: h5 - 506, size: 10, font: helveticaBold, color: blackColor
+                });
+
+                p5.drawRectangle({ x: 355, y: h5 - 542, width: 120, height: 18, color: whiteColor });
+                p5.drawText(`${formatINR(calcs.monthlyEnergy)} units`, {
+                    x: 356.9, y: h5 - 537, size: 10, font: helveticaBold, color: blackColor
+                });
+
+                p5.drawRectangle({ x: 375, y: h5 - 577, width: 120, height: 18, color: whiteColor });
+                p5.drawText(`Rs. ${formatINR(calcs.monthlySavings)}`, {
+                    x: 377.4, y: h5 - 572, size: 10, font: helveticaBold, color: blackColor
+                });
+
+                p5.drawRectangle({ x: 368, y: h5 - 597, width: 120, height: 18, color: whiteColor });
+                p5.drawText(`Rs. ${formatINR(calcs.annualSavings)}`, {
+                    x: 370.7, y: h5 - 592, size: 10, font: helveticaBold, color: blackColor
+                });
+
+                p5.drawRectangle({ x: 372, y: h5 - 648, width: 150, height: 20, color: whiteColor });
+                p5.drawText(`Rs. ${formatINR(calcs.savings25Yr)}`, {
+                    x: 374.6, y: h5 - 644, size: 12, font: helveticaBold, color: savingsBlueColor
+                });
+
+                // ================= PAGE 6 =================
+                const p6 = pages[5];
+                const h6 = p6.getHeight();
+
+                // Item 1 Title (5.5 is at x0=78.3, system is at x1=292, top=245.1)
+                p6.drawRectangle({ x: 75, y: h6 - 260, width: 230, height: 18, color: whiteColor });
+                p6.drawText(`${values.capacity_kw} kW OnGrid Solar PV system`, {
+                    x: 78.3, y: h6 - 256, size: 11, font: helveticaBold, color: blackColor
+                });
+
+                // Cumulative capacity (5.5 is at x0=361.2, top=304.0)
+                p6.drawRectangle({ x: 358, y: h6 - 317, width: 55, height: 16, color: whiteColor });
+                p6.drawText(`${values.min_cumulative_capacity_kwp} kWp`, {
+                    x: 361.2, y: h6 - 313, size: 9, font: helveticaBold, color: blackColor
+                });
+
+                // Panel Details Line 1 & Line 2 (Each is at x0=134.4, Topcon is at 283.8, top=319.5)
+                p6.drawRectangle({ x: 130, y: h6 - 331, width: 300, height: 15, color: whiteColor });
+                p6.drawText(`Each Solar Panel details : ${values.panel_technology} Bifacial ${values.panel_category} Solar`, {
+                    x: 134.4, y: h6 - 329, size: 9, font: helveticaBold, color: blackColor
+                });
+
+                p6.drawRectangle({ x: 130, y: h6 - 346, width: 200, height: 15, color: whiteColor });
+                p6.drawText(`Panels ${values.panel_wattage} Wp or above`, {
+                    x: 134.4, y: h6 - 344, size: 9, font: helveticaBold, color: blackColor
+                });
+
+                // Panel Brand (Adani is at x0=176.5, top=349.8)
+                p6.drawRectangle({ x: 170, y: h6 - 362, width: 180, height: 16, color: whiteColor });
+                p6.drawText(`${values.panel_brand}`, {
+                    x: 176.5, y: h6 - 359, size: 9, font: helveticaBold, color: blackColor
+                });
+
+                // Inverter (OnGrid is at x0=134.5, top=378.3, 5 kVA is at x0=255.2)
+                p6.drawRectangle({ x: 130, y: h6 - 392, width: 280, height: 16, color: whiteColor });
+                p6.drawText(`OnGrid Solar Inverter: ${values.inverter_capacity_kva} kVA 3 phase inverter`, {
+                    x: 134.5, y: h6 - 389, size: 9, font: helveticaBold, color: blackColor
+                });
+
+                // Inverter Brand (Waaree is at x0=175.2, top=392.6)
+                p6.drawRectangle({ x: 170, y: h6 - 405, width: 180, height: 16, color: whiteColor });
+                p6.drawText(`${values.inverter_brand}`, {
+                    x: 175.2, y: h6 - 402, size: 9, font: helveticaBold, color: blackColor
+                });
+
+                // Prices Right Column
+                // Note: The right table border is at x=569. Width must not exceed 90 starting from 476.
+                p6.drawRectangle({ x: 476, y: h6 - 259, width: 90, height: 18, color: whiteColor });
+                p6.drawText(`Rs. ${formatINR(calcs.basicCost)}`, {
+                    x: 478.7, y: h6 - 255, size: 10, font: helvetica, color: blackColor
+                });
+
+                p6.drawRectangle({ x: 476, y: h6 - 682, width: 90, height: 18, color: whiteColor });
+                p6.drawText(`Rs. ${formatINR(calcs.gst)}`, {
+                    x: 478.7, y: h6 - 679, size: 10, font: helveticaBold, color: blackColor
+                });
+
+                p6.drawRectangle({ x: 476, y: h6 - 713, width: 90, height: 18, color: whiteColor });
+                p6.drawText(`Rs. ${formatINR(values.project_cost_inr)}`, {
+                    x: 478.7, y: h6 - 710, size: 11, font: helveticaBold, color: blackColor
+                });
+
+                p6.drawRectangle({ x: 476, y: h6 - 733, width: 90, height: 22, color: blueColor });
+                p6.drawText(`Rs.${formatINR(calcs.netCost)}`, {
+                    x: 481.9, y: h6 - 726, size: 11, font: helveticaBold, color: whiteColor
+                });
+
+                // ================= PAGE 7 =================
+                const p7 = pages[6];
+                const h7 = p7.getHeight();
+
+                p7.drawRectangle({ x: 480, y: h7 - 533, width: 110, height: 18, color: whiteColor });
+                p7.drawText(`${formatDate(values.offer_valid_date)}`, {
+                    x: 495.4, y: h7 - 529, size: 10, font: helveticaBold, color: blackColor
+                });
+
+                // Inverter Warranty Years ("7" is at x0=337.0, top=301.5)
+                p7.drawRectangle({ x: 333, y: h7 - 313, width: 16, height: 14, color: whiteColor });
+                p7.drawText(`${values.inverter_warranty_years}`, {
+                    x: 337.0, y: h7 - 310, size: 9, font: helveticaBold, color: blackColor
+                });
+
+                // Civil Work line ("- Civil Work" is at x0=319.0, top=631.1) — only shown if toggle is checked (Appear)
+                if (!values.civil_work_toggle) {
+                    p7.drawRectangle({ x: 316, y: h7 - 643, width: 70, height: 14, color: whiteColor });
+                }
+
+                // Save PDF natively as Uint8Array bytes
+                const pdfBytes = await pdfDoc.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                const fileName = `${values.capacity_kw} kW Solar Proposal for ${values.customer_name || 'Customer'}.pdf`;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (err) {
+                console.error("Error generating native PDF:", err);
+                alert("Error generating PDF: " + err.message);
+            }
+        }
+
+    </script>
+</body>
+</html>

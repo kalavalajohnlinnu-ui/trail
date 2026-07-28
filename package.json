@@ -1,0 +1,9 @@
+{
+  "name": "effisol-solar-proposal-trial",
+  "version": "1.0.0",
+  "description": "EffiSol Solar Proposal Web App - Secure Trial Version",
+  "main": "api/generate-pdf.js",
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  }
+}

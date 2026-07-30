@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EffiSol Proposal Hub | Full-Stack App</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="glow-bg"></div>
+
+  <div class="app-container">
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">⚡</div>
+        <h1>EffiSol <span>Proposal Generator</span></h1>
+      </div>
+      <div class="status-badge" id="backendStatus">
+        <span class="dot pulse"></span>
+        <span id="statusText">Connecting to Backend...</span>
+      </div>
+    </header>
+
+    <main class="main-grid">
+      <!-- Config Box for API URL -->
+      <section class="card config-card">
+        <h2>🌐 API Configuration</h2>
+        <p>Set your Render backend URL when deployed to production:</p>
+        <div class="input-group">
+          <input type="url" id="apiUrlInput" placeholder="http://localhost:3000" value="http://localhost:3000">
+          <button id="saveApiUrlBtn" class="btn btn-secondary">Connect API</button>
+        </div>
+      </section>
+
+      <!-- Proposal Form Card -->
+      <section class="card form-card">
+        <h2>✨ Create New Proposal</h2>
+        <form id="proposalForm">
+          <div class="field-group">
+            <label for="title">Proposal Title</label>
+            <input type="text" id="title" placeholder="e.g. Commercial Solar Installation" required>
+          </div>
+          <div class="field-group">
+            <label for="client">Client Name</label>
+            <input type="text" id="client" placeholder="e.g. Acme Eco Corp" required>
+          </div>
+          <div class="field-group">
+            <label for="amount">Estimated Value ($)</label>
+            <input type="text" id="amount" placeholder="e.g. $24,500">
+          </div>
+          <button type="submit" class="submit-btn btn btn-primary">
+            <span>Submit to Backend</span> ➔
+          </button>
+        </form>
+      </section>
+
+      <!-- Proposals List Card -->
+      <section class="card list-card">
+        <div class="card-header">
+          <h2>📊 Saved Proposals</h2>
+          <button id="refreshBtn" class="btn btn-icon">🔄 Refresh</button>
+        </div>
+        <div class="proposals-list" id="proposalsList">
+          <div class="loading-spinner">Fetching data from backend...</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Deployed with GitHub Pages (Frontend) & Render.com (Backend API)</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
